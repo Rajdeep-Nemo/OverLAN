@@ -1,0 +1,224 @@
+<!doctype html>
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>OverLAN</title>
+        <style>
+            :root {
+                --primary: #3b9e62;
+                --bg: #f5f5f3;
+                --card-bg: #ffffff;
+            }
+
+            * {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+            body {
+                font-family:
+                    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                    sans-serif;
+                background: var(--bg);
+                min-height: 100vh;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+
+            /* Top Island */
+            .topbar {
+                margin-top: 20px;
+                background: var(--card-bg);
+                padding: 10px 20px;
+                border-radius: 50px;
+                border: 1px solid rgba(0, 0, 0, 0.05);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                z-index: 10;
+            }
+            .topbar h1 {
+                font-size: 14px;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                color: #555;
+            }
+            .dot {
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                background: #dee2e6;
+                transition: background 0.3s;
+            }
+            .dot.live {
+                background: var(--primary);
+                box-shadow: 0 0 8px var(--primary);
+            }
+
+            /* Main Content Island */
+            .body {
+                flex: 1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 100%;
+                padding: 24px;
+            }
+
+            .card {
+                background: var(--card-bg);
+                border-radius: 20px;
+                padding: 24px;
+                width: 100%;
+                max-width: 380px;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+                border: 1px solid rgba(0, 0, 0, 0.03);
+            }
+
+            .card-header {
+                margin-bottom: 24px;
+            }
+            .file-name {
+                font-size: 17px;
+                font-weight: 600;
+                word-break: break-all;
+                margin-bottom: 4px;
+            }
+            .file-size {
+                font-size: 14px;
+                color: #888;
+            }
+
+            .actions {
+                display: flex;
+                gap: 12px;
+            }
+            button {
+                flex: 1;
+                padding: 12px;
+                border-radius: 10px;
+                font-weight: 600;
+                cursor: pointer;
+                border: none;
+                background: #f0f0f0;
+                transition: 0.2s;
+            }
+            button:hover {
+                background: #e5e5e5;
+            }
+            .btn-accept {
+                background: var(--primary);
+                color: white;
+            }
+            .btn-accept:hover {
+                background: #328653;
+            }
+
+            .progress-track {
+                height: 6px;
+                border-radius: 3px;
+                background: #eee;
+                overflow: hidden;
+                margin: 16px 0;
+            }
+            .progress-fill {
+                height: 100%;
+                background: var(--primary);
+                width: 0%;
+                transition: width 0.3s;
+            }
+            .progress-meta {
+                display: flex;
+                justify-content: space-between;
+                font-size: 13px;
+                color: #888;
+                font-weight: 500;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="topbar">
+            <h1>OverLAN</h1>
+            <div class="dot" id="dot"></div>
+        </div>
+
+        <div class="body" id="body">
+            <div class="empty">
+                <p style="color: #aaa">Waiting for incoming files...</p>
+            </div>
+        </div>
+
+        <script>
+            const es = new EventSource("/events");
+
+            es.addEventListener("file", (e) => {
+                const f = JSON.parse(e.data);
+                document.getElementById("dot").classList.add("live");
+                document.getElementById("body").innerHTML = `
+                      <div class="card">
+                        <div class="card-header">
+                            <div class="file-name">${f.name}</div>
+                          <div class="file-size">${formatSize(f.size)}</div>
+                        </div>
+                        <div class="actions">
+                          <button onclick="reject()">Reject</button>
+                          <button class="btn-accept" onclick="accept()">Accept</button>
+                        </div>
+                      </div>`;
+            });
+
+            function accept() {
+                fetch("/accept", { method: "POST" });
+                showProgress();
+            }
+
+            function reject() {
+                fetch("/reject", { method: "POST" });
+                document.getElementById("dot").classList.remove("live");
+                document.getElementById("body").innerHTML =
+                    '<div class="empty"><p style="color: #aaa">Waiting for incoming files…</p></div>';
+            }
+
+            function showProgress() {
+                document.getElementById("body").innerHTML = `
+                <div class="card">
+                  <div class="progress-meta"><span id="pct">0%</span><span id="spd"></span></div>
+                  <div class="progress-track"><div class="progress-fill" id="bar"></div></div>
+                  <div style="font-size:13px;color:#888;margin-top:8px" id="status">Transferring…</div>
+                </div>`;
+
+                // Trigger the actual download — browser saves the file
+                const a = document.createElement("a");
+                a.href = "/download";
+                a.download = "";
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            }
+
+            // SSE progress events from the server during transfer
+            es.addEventListener("progress", (e) => {
+                const p = JSON.parse(e.data);
+                const pct = Math.round((p.sent / p.total) * 100);
+                document.getElementById("bar").style.width = pct + "%";
+                document.getElementById("pct").textContent = pct + "%";
+                document.getElementById("spd").textContent =
+                    formatSize(p.speed) + "/s";
+                if (pct >= 100) {
+                    document.getElementById("status").textContent =
+                        "Saved to downloads";
+                    document.getElementById("dot").classList.remove("live");
+                }
+            });
+
+            function formatSize(bytes) {
+                if (bytes < 1024) return bytes + " B";
+                if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
+                return (bytes / 1048576).toFixed(1) + " MB";
+            }
+        </script>
+    </body>
+</html>
