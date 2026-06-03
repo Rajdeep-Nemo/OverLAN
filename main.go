@@ -47,7 +47,6 @@ func getPendingFile() (string, bool) {
 func handleHome(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 	w.Write(receiverHTML)
-	//fmt.Fprint(w, receiverHTML)
 }
 
 // Helper to broadcast JSON data to all connected SSE clients
@@ -187,14 +186,14 @@ func main() {
 	fmt.Println("Type a file path and press ENTER to share it...")
 	// Setting up the routes
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", handleHome)             // serves the browser UI
+	mux.HandleFunc("/", handleHome)             // Serves the browser UI
 	mux.HandleFunc("/events", handleSSE)        // SSE stream
-	mux.HandleFunc("/accept", handleAccept)     // receiver clicks Accept
-	mux.HandleFunc("/download", handleDownload) // actual file bytes
+	mux.HandleFunc("/accept", handleAccept)     // Accept handler
+	mux.HandleFunc("/download", handleDownload) // Serves file
 
 	fileChan := make(chan string)
 
-	// Run path reading in a background goroutine
+	// Runs path reading in a background goroutine
 	go func() {
 		scanner := bufio.NewScanner(os.Stdin)
 		for scanner.Scan() {
