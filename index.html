@@ -4,12 +4,6 @@
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>OverLAN</title>
         <style>
-            :root {
-                --primary: #3b9e62;
-                --bg: #f5f5f3;
-                --card-bg: #ffffff;
-            }
-
             * {
                 box-sizing: border-box;
                 margin: 0;
@@ -19,212 +13,389 @@
                 font-family:
                     -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
                     sans-serif;
-                background: var(--bg);
+                background: #fff;
+                color: #000;
+                padding: 2rem;
+                width: 100%;
                 min-height: 100vh;
                 display: flex;
                 flex-direction: column;
-                align-items: center;
             }
 
-            /* Top Island */
+            /* Header */
             .topbar {
-                margin-top: 20px;
-                background: var(--card-bg);
-                padding: 10px 20px;
-                border-radius: 50px;
-                border: 1px solid rgba(0, 0, 0, 0.05);
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
                 display: flex;
                 align-items: center;
-                gap: 12px;
-                z-index: 10;
+                border-bottom: 2px solid #000;
+                padding-bottom: 1rem;
+                margin-bottom: 2rem;
+                gap: 1.5rem;
             }
             .topbar h1 {
-                font-size: 14px;
-                font-weight: 600;
+                font-size: 1.5rem;
                 text-transform: uppercase;
-                letter-spacing: 1px;
-                color: #555;
-            }
-            .dot {
-                width: 8px;
-                height: 8px;
-                border-radius: 50%;
-                background: #dee2e6;
-                transition: background 0.3s;
-            }
-            .dot.live {
-                background: var(--primary);
-                box-shadow: 0 0 8px var(--primary);
+                letter-spacing: 2px;
+                flex-grow: 1;
             }
 
-            /* Main Content Island */
-            .body {
-                flex: 1;
+            .nav-actions {
+                display: flex;
+                gap: 1rem;
+            }
+            .nav-btn {
+                padding: 0.5rem 1.5rem;
+                background: #fff;
+                color: #000;
+                border: 2px solid #000;
+                font-weight: 700;
+                cursor: pointer;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                white-space: nowrap;
+            }
+            .nav-btn:hover {
+                background: #000;
+                color: #fff;
+            }
+
+            /* View Containers */
+            #main-view {
+                display: flex;
+                flex-direction: column;
+                width: 100%;
+                flex-grow: 1;
+            }
+            #history-view {
+                display: none;
+                flex-direction: column;
+                width: 100%;
+                flex-grow: 1;
+            }
+
+            /* Empty States */
+            .empty-state-text {
+                flex-grow: 1;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                width: 100%;
-                padding: 24px;
-            }
-
-            .card {
-                background: var(--card-bg);
-                border-radius: 20px;
-                padding: 24px;
-                width: 100%;
-                max-width: 380px;
-                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-                border: 1px solid rgba(0, 0, 0, 0.03);
-            }
-
-            .card-header {
-                margin-bottom: 24px;
-            }
-            .file-name {
-                font-size: 17px;
-                font-weight: 600;
-                word-break: break-all;
-                margin-bottom: 4px;
-            }
-            .file-size {
-                font-size: 14px;
+                font-size: 1.25rem;
+                letter-spacing: 2px;
+                text-transform: uppercase;
                 color: #888;
             }
 
-            .actions {
+            /* Queue & Single-Line Cards */
+            #queue {
                 display: flex;
-                gap: 12px;
+                flex-direction: column;
+                gap: 0.5rem;
             }
-            button {
-                flex: 1;
-                padding: 12px;
-                border-radius: 10px;
-                font-weight: 600;
-                cursor: pointer;
-                border: none;
-                background: #f0f0f0;
-                transition: 0.2s;
+            .card {
+                display: flex;
+                align-items: center;
+                border: 2px solid #000;
+                padding: 0.75rem 1rem;
+                gap: 1.5rem;
+                width: 100%;
             }
-            button:hover {
-                background: #e5e5e5;
+            .file-name {
+                font-weight: 700;
+                font-size: 1rem;
+                flex-grow: 1;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
-            .btn-accept {
-                background: var(--primary);
-                color: white;
-            }
-            .btn-accept:hover {
-                background: #328653;
+            .file-size {
+                font-family: monospace;
+                font-size: 1rem;
+                white-space: nowrap;
+                width: 80px;
+                text-align: right;
             }
 
+            /* Actions */
+            .actions {
+                display: flex;
+                gap: 0.5rem;
+            }
+            .actions button {
+                padding: 0.5rem 1rem;
+                background: #fff;
+                color: #000;
+                border: 2px solid #000;
+                font-weight: 700;
+                cursor: pointer;
+                text-transform: uppercase;
+                white-space: nowrap;
+            }
+            .actions button:hover {
+                background: #000;
+                color: #fff;
+            }
+
+            /* Inline Progress */
+            .progress-wrapper {
+                display: flex;
+                align-items: center;
+                gap: 1.5rem;
+                flex-grow: 2;
+                font-family: monospace;
+                font-size: 1rem;
+            }
+            .stats {
+                display: flex;
+                gap: 1rem;
+                white-space: nowrap;
+                min-width: 130px;
+            }
             .progress-track {
-                height: 6px;
-                border-radius: 3px;
-                background: #eee;
-                overflow: hidden;
-                margin: 16px 0;
+                flex-grow: 1;
+                height: 10px;
+                background: #fff;
+                border: 1px solid #000;
+                position: relative;
+                min-width: 100px;
             }
             .progress-fill {
                 height: 100%;
-                background: var(--primary);
+                background: #000;
                 width: 0%;
-                transition: width 0.3s;
+                position: absolute;
+                top: 0;
+                left: 0;
             }
-            .progress-meta {
+            .status-text {
+                text-transform: uppercase;
+                white-space: nowrap;
+                width: 180px;
+                text-align: right;
+            }
+
+            /* History Table Styles */
+            #history-table {
+                display: none;
+                width: 100%;
+                font-family: monospace;
+                font-size: 1rem;
+            }
+            .history-header,
+            .history-item {
                 display: flex;
-                justify-content: space-between;
-                font-size: 13px;
-                color: #888;
-                font-weight: 500;
+                padding: 0.75rem 1rem;
+                gap: 1.5rem;
+                width: 100%;
+            }
+
+            /* Uniform 3px border box for the header */
+            .history-header {
+                font-weight: 700;
+                text-transform: uppercase;
+                border: 3px solid #000;
+            }
+
+            .history-header > div {
+                font-size: 1rem;
+                font-weight: 700;
+            }
+
+            .history-item {
+                border-bottom: 2px solid #000;
+                border-left: 3px solid transparent; /* Matches the 3px header border to keep text perfectly aligned */
+                border-right: 3px solid transparent;
+            }
+
+            /* Identical widths & spacing for header and items */
+            .history-header .time,
+            .history-item .time {
+                width: 100px;
+            }
+            .history-header .name,
+            .history-item .name {
+                flex-grow: 1;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .history-header .status,
+            .history-item .status {
+                width: 120px;
+                text-align: right;
+                text-transform: uppercase;
             }
         </style>
     </head>
     <body>
         <div class="topbar">
-            <h1>OverLAN</h1>
-            <div class="dot" id="dot"></div>
+            <h1>OVERLAN</h1>
+            <div class="nav-actions">
+                <button
+                    class="nav-btn"
+                    id="btn-history"
+                    onclick="toggleHistory()"
+                >
+                    HISTORY
+                </button>
+                <input
+                    type="file"
+                    id="fileInput"
+                    style="display: none"
+                    onchange="uploadFile(this.files[0])"
+                />
+                <button
+                    class="nav-btn"
+                    onclick="document.getElementById('fileInput').click()"
+                >
+                    SHARE FILE
+                </button>
+            </div>
         </div>
 
-        <div class="body" id="body">
+        <div id="main-view">
+            <div id="empty-queue-state" class="empty-state-text">
+                WAITING FOR FILES...
             </div>
+            <div id="queue"></div>
+        </div>
+
+        <div id="history-view">
+            <div id="empty-history-state" class="empty-state-text">
+                HISTORY IS EMPTY
+            </div>
+            <div id="history-table">
+                <div class="history-header">
+                    <div class="time">TIME</div>
+                    <div class="name">FILE NAME</div>
+                    <div class="status">STATUS</div>
+                </div>
+                <div id="history-list"></div>
+            </div>
+        </div>
 
         <script>
             const es = new EventSource("/events");
 
-            // Initialize the UI on page load
-            resetUI();
+            // --- VIEW TOGGLING ---
+            let isHistoryView = false;
+            function toggleHistory() {
+                isHistoryView = !isHistoryView;
+                const main = document.getElementById("main-view");
+                const hist = document.getElementById("history-view");
+                const btn = document.getElementById("btn-history");
+
+                if (isHistoryView) {
+                    main.style.display = "none";
+                    hist.style.display = "flex";
+                    btn.textContent = "QUEUE";
+                } else {
+                    main.style.display = "flex";
+                    hist.style.display = "none";
+                    btn.textContent = "HISTORY";
+                }
+            }
+
+            // --- QUEUE LOGIC ---
+            function checkEmptyQueue() {
+                const queueHasItems =
+                    document.getElementById("queue").children.length > 0;
+                if (queueHasItems) {
+                    document.getElementById("empty-queue-state").style.display =
+                        "none";
+                } else {
+                    document.getElementById("empty-queue-state").style.display =
+                        "flex";
+                }
+            }
 
             es.addEventListener("file", (e) => {
                 const f = JSON.parse(e.data);
-                document.getElementById("dot").classList.add("live");
-                document.getElementById("body").innerHTML = `
-                      <div class="card">
-                        <div class="card-header">
-                            <div class="file-name">${f.name}</div>
-                          <div class="file-size">${formatSize(f.size)}</div>
-                        </div>
+                if (document.getElementById(`card-${f.id}`)) return;
+
+                const html = `
+                    <div class="card" id="card-${f.id}">
+                        <div class="file-name" title="${f.name}">${f.name}</div>
+                        <div class="file-size">${formatSize(f.size)}</div>
                         <div class="actions">
-                          <button onclick="reject()">Reject</button>
-                          <button class="btn-accept" onclick="accept()">Accept</button>
+                            <button onclick="reject('${f.id}')">REJECT</button>
+                            <button onclick="accept('${f.id}')">ACCEPT</button>
                         </div>
-                      </div>`;
+                    </div>`;
+                document
+                    .getElementById("queue")
+                    .insertAdjacentHTML("beforeend", html);
+                checkEmptyQueue();
             });
 
-            function accept() {
-                fetch("/accept", { method: "POST" });
-                showProgress();
-            }
+            function accept(id) {
+                const card = document.getElementById(`card-${id}`);
+                const name = card.querySelector(".file-name").textContent;
 
-            function reject() {
-                fetch("/reject", { method: "POST" });
-                document.getElementById("dot").classList.remove("live");
-                resetUI();
-            }
+                card.innerHTML = `
+                    <div class="file-name" title="${name}">${name}</div>
+                    <div class="progress-wrapper">
+                        <div class="stats"><span id="pct-${id}">0%</span> <span id="spd-${id}"></span></div>
+                        <div class="progress-track"><div class="progress-fill" id="bar-${id}"></div></div>
+                        <div class="status-text" id="status-${id}">DOWNLOADING...</div>
+                    </div>
+                `;
 
-            function showProgress() {
-                document.getElementById("body").innerHTML = `
-                <div class="card">
-                  <div class="progress-meta"><span id="pct">0%</span><span id="spd"></span></div>
-                  <div class="progress-track"><div class="progress-fill" id="bar"></div></div>
-                  <div style="font-size:13px;color:#888;margin-top:8px" id="status">Transferring...</div>
-                </div>`;
-
-                // Trigger the actual download — browser saves the file
                 const a = document.createElement("a");
-                a.href = "/download";
+                a.href = `/download?id=${id}`;
                 a.download = "";
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
             }
 
-            // SSE progress events from the server during transfer
+            function reject(id) {
+                fetch(`/reject?id=${id}`);
+                removeCard(id);
+            }
+
+            function removeCard(id) {
+                const card = document.getElementById(`card-${id}`);
+                if (card) {
+                    card.remove();
+                    checkEmptyQueue();
+                }
+            }
+
             es.addEventListener("progress", (e) => {
                 const p = JSON.parse(e.data);
+                const bar = document.getElementById(`bar-${p.id}`);
+                if (!bar) return;
+
                 const pct = Math.round((p.sent / p.total) * 100);
-                document.getElementById("bar").style.width = pct + "%";
-                document.getElementById("pct").textContent = pct + "%";
-                document.getElementById("spd").textContent =
+                bar.style.width = pct + "%";
+                document.getElementById(`pct-${p.id}`).textContent = pct + "%";
+                document.getElementById(`spd-${p.id}`).textContent =
                     formatSize(p.speed) + "/s";
+
                 if (pct >= 100) {
-                    document.getElementById("status").textContent =
-                        "Saved to downloads";
-                    document.getElementById("dot").classList.remove("live");
-                    setTimeout(resetUI, 3000);
+                    document.getElementById(`status-${p.id}`).textContent =
+                        "SAVED TO DOWNLOADS";
+                    setTimeout(() => removeCard(p.id), 2500);
                 }
             });
 
-            // Browser-to-Server Upload Logic
             function uploadFile(file) {
                 if (!file) return;
 
-                document.getElementById("dot").classList.add("live");
-                document.getElementById("body").innerHTML = `
-                  <div class="card">
-                    <div class="progress-meta"><span id="pct">0%</span><span>Uploading...</span></div>
-                    <div class="progress-track"><div class="progress-fill" id="bar"></div></div>
-                    <div style="font-size:13px;color:#888;margin-top:8px;word-break:break-all;" id="status">${file.name}</div>
-                  </div>`;
+                const tempId = "up-" + Math.random().toString(36).substring(2);
+
+                const html = `
+                    <div class="card" id="card-${tempId}">
+                        <div class="file-name" title="${file.name}">${file.name}</div>
+                        <div class="progress-wrapper">
+                            <div class="stats"><span id="pct-${tempId}">0%</span></div>
+                            <div class="progress-track"><div class="progress-fill" id="bar-${tempId}"></div></div>
+                            <div class="status-text" id="status-${tempId}">UPLOADING...</div>
+                        </div>
+                    </div>`;
+                document
+                    .getElementById("queue")
+                    .insertAdjacentHTML("afterbegin", html);
+                checkEmptyQueue();
 
                 const xhr = new XMLHttpRequest();
                 xhr.open("POST", "/upload", true);
@@ -232,20 +403,24 @@
                 xhr.upload.onprogress = (e) => {
                     if (e.lengthComputable) {
                         const pct = Math.round((e.loaded / e.total) * 100);
-                        document.getElementById("bar").style.width = pct + "%";
-                        document.getElementById("pct").textContent = pct + "%";
+                        document.getElementById(`bar-${tempId}`).style.width =
+                            pct + "%";
+                        document.getElementById(`pct-${tempId}`).textContent =
+                            pct + "%";
                     }
                 };
 
                 xhr.onload = () => {
-                    document.getElementById("dot").classList.remove("live");
                     if (xhr.status === 200) {
-                        document.getElementById("status").textContent = "Sent to PC successfully.";
-                        setTimeout(resetUI, 2500);
+                        document.getElementById(
+                            `status-${tempId}`,
+                        ).textContent = "SENT SUCCESSFULLY";
+                        setTimeout(() => removeCard(tempId), 2000);
                     } else {
-                        document.getElementById("status").textContent = "Upload failed.";
-                        document.getElementById("status").style.color = "#d9534f";
-                        setTimeout(resetUI, 4000);
+                        document.getElementById(
+                            `status-${tempId}`,
+                        ).textContent = "UPLOAD FAILED";
+                        setTimeout(() => removeCard(tempId), 4000);
                     }
                 };
 
@@ -254,16 +429,48 @@
                 xhr.send(formData);
             }
 
-            function resetUI() {
-                document.getElementById("body").innerHTML = `
-                    <div class="card" style="box-shadow: none; background: transparent; border: none; text-align: center;">
-                        <p style="color: #aaa; margin-bottom: 24px;">Waiting for incoming files...</p>
-                        <p style="color: #ccc; font-size: 12px; margin-bottom: 24px; text-transform: uppercase; letter-spacing: 1px;">- OR -</p>
-                        <input type="file" id="fileInput" style="display: none;" onchange="uploadFile(this.files[0])">
-                        <button class="btn-accept" style="padding: 14px 24px;" onclick="document.getElementById('fileInput').click()">Send File to PC</button>
-                    </div>`;
+            // --- HISTORY LOGIC ---
+            function checkEmptyHistory() {
+                const list = document.getElementById("history-list");
+                const emptyState = document.getElementById(
+                    "empty-history-state",
+                );
+                const table = document.getElementById("history-table");
+
+                if (list.children.length === 0) {
+                    emptyState.style.display = "flex";
+                    table.style.display = "none";
+                } else {
+                    emptyState.style.display = "none";
+                    table.style.display = "block";
+                }
             }
 
+            function createHistoryRow(item) {
+                return `
+                    <div class="history-item">
+                        <div class="time">${item.time}</div>
+                        <div class="name" title="${item.name}">${item.name}</div>
+                        <div class="status">${item.status}</div>
+                    </div>
+                `;
+            }
+
+            es.addEventListener("history_sync", (e) => {
+                const items = JSON.parse(e.data);
+                const list = document.getElementById("history-list");
+                list.innerHTML = items.map(createHistoryRow).join("");
+                checkEmptyHistory();
+            });
+
+            es.addEventListener("history_add", (e) => {
+                const item = JSON.parse(e.data);
+                const list = document.getElementById("history-list");
+                list.insertAdjacentHTML("afterbegin", createHistoryRow(item));
+                checkEmptyHistory();
+            });
+
+            // --- UTILITIES ---
             function formatSize(bytes) {
                 if (bytes < 1024) return bytes + " B";
                 if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
