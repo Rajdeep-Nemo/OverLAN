@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -196,11 +197,23 @@ func handleDownload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// 1. Get the exact file size immediately
+	info, err := os.Stat(path)
+	if err != nil {
+		http.Error(w, "Unable to read local file", http.StatusInternalServerError)
+		return
+	}
+
 	addHistory(filepath.Base(path), "DOWNLOADED")
 
+	// 2. Force the exact file size so the browser instantly knows the progress bar length
+	w.Header().Set("Content-Length", strconv.FormatInt(info.Size(), 10))
+
+	// 3. Force raw binary stream so Go/Browser skips MIME-sniffing
+	w.Header().Set("Content-Type", "application/octet-stream")
 	w.Header().Set("Content-Disposition", "attachment; filename=\""+filepath.Base(path)+"\"")
 
-	// http.ServeFile handles the streaming, range requests (resuming), and exact file sizes natively!
+	// 4. Let Go's highly optimized ServeFile handle the actual transfer
 	http.ServeFile(w, r, path)
 }
 
