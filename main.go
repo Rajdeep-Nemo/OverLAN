@@ -184,7 +184,6 @@ func handleReject(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// DELEGATED TO NATIVE BROWSER DOWNLOAD
 func handleDownload(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 
@@ -197,7 +196,6 @@ func handleDownload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 1. Get the exact file size immediately
 	info, err := os.Stat(path)
 	if err != nil {
 		http.Error(w, "Unable to read local file", http.StatusInternalServerError)
@@ -206,29 +204,21 @@ func handleDownload(w http.ResponseWriter, r *http.Request) {
 
 	addHistory(filepath.Base(path), "DOWNLOADED")
 
-	// 2. Force the exact file size so the browser instantly knows the progress bar length
 	w.Header().Set("Content-Length", strconv.FormatInt(info.Size(), 10))
-
-	// 3. Force raw binary stream so Go/Browser skips MIME-sniffing
 	w.Header().Set("Content-Type", "application/octet-stream")
 	w.Header().Set("Content-Disposition", "attachment; filename=\""+filepath.Base(path)+"\"")
 
-	// 4. Let Go's highly optimized ServeFile handle the actual transfer
 	http.ServeFile(w, r, path)
 }
 
+// HIGH-PERFORMANCE STREAMING UPLOAD
 func handleUpload(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseMultipartForm(32 << 20); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	file, header, err := r.FormFile("file")
+	// 1. Grab the raw network stream directly (NO Temp files, NO memory limits)
+	reader, err := r.MultipartReader()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	defer file.Close()
 
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
@@ -241,23 +231,46 @@ func handleUpload(w http.ResponseWriter, r *http.Request) {
 		downloadFolder = homeDir
 	}
 
-	savePath := filepath.Join(downloadFolder, header.Filename)
-	dst, err := os.Create(savePath)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	// 2. Iterate through the incoming form parts until we find the actual file
+	for {
+		part, err := reader.NextPart()
+		if err == io.EOF {
+			break // Finished reading request
+		}
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// 3. If we found the file part, start streaming it to disk
+		if part.FileName() != "" {
+			savePath := filepath.Join(downloadFolder, part.FileName())
+			dst, err := os.Create(savePath)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			// io.Copy writes from the network stream directly to the file stream.
+			if _, err := io.Copy(dst, part); err != nil {
+				// If the user clicks Cancel, io.Copy fails. We must close and delete the broken file.
+				dst.Close()
+				os.Remove(savePath)
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			// Upload succeeded!
+			dst.Close()
+
+			addHistory(part.FileName(), "UPLOADED")
+			fmt.Printf("\nReceived file from browser: %s\n", savePath)
+			w.WriteHeader(http.StatusOK)
+			return // We process one file per request, then exit
+		}
 	}
-	defer dst.Close()
 
-	if _, err := io.Copy(dst, file); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	addHistory(header.Filename, "UPLOADED")
-
-	fmt.Printf("\nReceived file from browser: %s\n", savePath)
-	w.WriteHeader(http.StatusOK)
+	http.Error(w, "No file found in request", http.StatusBadRequest)
 }
 
 func getLocalIP() string {
