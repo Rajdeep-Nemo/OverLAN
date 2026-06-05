@@ -43,7 +43,7 @@
                 gap: 1rem;
             }
             .nav-btn {
-                padding: 0.5rem 0.75rem;
+                padding: 0;
                 background: #fff;
                 color: #000;
                 border: 2px solid #000;
@@ -53,22 +53,35 @@
                 letter-spacing: 1px;
                 white-space: nowrap;
                 display: flex;
-                align-items: center;
-                gap: 0.25rem;
+                align-items: stretch;
             }
             .nav-btn:hover {
                 background: #000;
                 color: #fff;
+                box-shadow: inset 0 0 0 2px #fff;
+            }
+            .nav-btn .btn-label {
+                display: flex;
+                align-items: center;
+                padding: 0.5rem 0.85rem;
+                flex-grow: 1;
+            }
+            .nav-btn .btn-icon {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 36px;
+                min-width: 36px;
+                border-left: 2px solid #000;
+            }
+            .nav-btn:hover .btn-icon {
+                border-left-color: #fff;
             }
             .nav-btn svg {
                 display: block;
             }
 
-            /* Fixes the jitter when swapping between History/Queue */
-            #btn-history {
-                width: 145px;
-                justify-content: center;
-            }
+            /* History/Queue button shares the standard nav-btn width */
 
             /* View Containers */
             #main-view {
@@ -132,7 +145,7 @@
                 gap: 0.5rem;
             }
             .actions button {
-                padding: 0.5rem 1rem;
+                padding: 0;
                 background: #fff;
                 color: #000;
                 border: 2px solid #000;
@@ -140,10 +153,33 @@
                 cursor: pointer;
                 text-transform: uppercase;
                 white-space: nowrap;
+                display: flex;
+                align-items: stretch;
             }
             .actions button:hover {
                 background: #000;
                 color: #fff;
+                box-shadow: inset 0 0 0 2px #fff;
+            }
+            .actions button .btn-label {
+                display: flex;
+                align-items: center;
+                padding: 0.5rem 0.85rem;
+                flex-grow: 1;
+            }
+            .actions button .btn-icon {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                min-width: 36px;
+                width: 36px;
+                border-left: 2px solid #000;
+            }
+            .actions button:hover .btn-icon {
+                border-left-color: #fff;
+            }
+            .actions button svg {
+                display: block;
             }
 
             /* Inline Progress */
@@ -244,24 +280,26 @@
                     id="btn-history"
                     onclick="toggleHistory()"
                 >
-                    HISTORY
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                    >
-                        <path
-                            d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"
-                        />
-                        <path d="M3 3v5h5" />
-                        <path d="M12 7v5l4 2" />
-                    </svg>
+                    <span class="btn-label">HISTORY</span>
+                    <span class="btn-icon">
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <path
+                                d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"
+                            />
+                            <path d="M3 3v5h5" />
+                            <path d="M12 7v5l4 2" />
+                        </svg>
+                    </span>
                 </button>
                 <input
                     type="file"
@@ -273,22 +311,26 @@
                     class="nav-btn"
                     onclick="document.getElementById('fileInput').click()"
                 >
-                    SHARE FILE
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                    >
-                        <path d="M12 2v13" />
-                        <path d="m16 6-4-4-4 4" />
-                        <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-                    </svg>
+                    <span class="btn-label">SHARE FILE</span>
+                    <span class="btn-icon">
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <path d="M12 2v13" />
+                            <path d="m16 6-4-4-4 4" />
+                            <path
+                                d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"
+                            />
+                        </svg>
+                    </span>
                 </button>
             </div>
         </div>
@@ -332,11 +374,11 @@
                 if (isHistoryView) {
                     main.style.display = "none";
                     hist.style.display = "flex";
-                    btn.innerHTML = "QUEUE " + queueIcon;
+                    btn.innerHTML = `<span class="btn-label">QUEUE</span><span class="btn-icon">${queueIcon}</span>`;
                 } else {
                     main.style.display = "flex";
                     hist.style.display = "none";
-                    btn.innerHTML = "HISTORY " + historyIcon;
+                    btn.innerHTML = `<span class="btn-label">HISTORY</span><span class="btn-icon">${historyIcon}</span>`;
                 }
             }
 
@@ -362,8 +404,8 @@
                         <div class="file-name" title="${f.name}">${f.name}</div>
                         <div class="file-size">${formatSize(f.size)}</div>
                         <div class="actions">
-                            <button onclick="reject('${f.id}')">REJECT</button>
-                            <button onclick="accept('${f.id}')">ACCEPT</button>
+                            <button onclick="reject('${f.id}')"><span class="btn-label">REJECT</span><span class="btn-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></span></button>
+                            <button onclick="accept('${f.id}')"><span class="btn-label">ACCEPT</span><span class="btn-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span></button>
                         </div>
                     </div>`;
                 document
