@@ -12,7 +12,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -184,6 +183,7 @@ func handleReject(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// DELEGATED TO NATIVE BROWSER DOWNLOAD
 func handleDownload(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 
@@ -198,47 +198,10 @@ func handleDownload(w http.ResponseWriter, r *http.Request) {
 
 	addHistory(filepath.Base(path), "DOWNLOADED")
 
-	file, err := os.Open(path)
-	if err != nil {
-		http.Error(w, "Unable to read local file", http.StatusNotFound)
-		return
-	}
-	defer file.Close()
-
-	info, _ := file.Stat()
-	total := info.Size()
-
 	w.Header().Set("Content-Disposition", "attachment; filename=\""+filepath.Base(path)+"\"")
-	w.Header().Set("Content-Type", "application/octet-stream")
-	w.Header().Set("Content-Length", strconv.FormatInt(total, 10))
 
-	buf := make([]byte, 32*1024)
-	var sent int64
-	start := time.Now()
-
-	for {
-		n, err := file.Read(buf)
-		if n > 0 {
-			w.Write(buf[:n])
-			sent += int64(n)
-			elapsed := time.Since(start).Seconds()
-
-			var speed int64
-			if elapsed > 0 {
-				speed = int64(float64(sent) / elapsed)
-			}
-
-			broadcastSSE("progress", map[string]any{
-				"id":    id,
-				"sent":  sent,
-				"total": total,
-				"speed": speed,
-			})
-		}
-		if err != nil {
-			break
-		}
-	}
+	// http.ServeFile handles the streaming, range requests (resuming), and exact file sizes natively!
+	http.ServeFile(w, r, path)
 }
 
 func handleUpload(w http.ResponseWriter, r *http.Request) {

@@ -65,11 +65,11 @@
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                padding: 0 1rem; /* Restored comfortable padding for text */
+                padding: 0 1rem;
                 flex-grow: 1;
             }
             .nav-btn .btn-icon {
-                display: none; /* HIDDEN ON DESKTOP */
+                display: none;
                 align-items: center;
                 justify-content: center;
                 width: 40px;
@@ -83,7 +83,6 @@
                 display: block;
             }
 
-            /* Fixed width to prevent jitter - reduced since icon is gone */
             #btn-history {
                 width: 120px;
             }
@@ -174,7 +173,7 @@
                 flex-grow: 1;
             }
             .actions button .btn-icon {
-                display: none; /* HIDDEN ON DESKTOP */
+                display: none;
                 align-items: center;
                 justify-content: center;
                 min-width: 40px;
@@ -188,7 +187,7 @@
                 display: block;
             }
 
-            /* Inline Progress */
+            /* Inline Progress (Kept strictly for Uploads) */
             .progress-wrapper {
                 display: flex;
                 align-items: center;
@@ -290,23 +289,21 @@
                     gap: 0.5rem;
                 }
 
-                /* Explicitly force buttons to be perfect 42x42 squares */
                 .nav-btn,
                 #btn-history {
                     width: 42px !important;
                     height: 42px !important;
                 }
                 .nav-btn .btn-label {
-                    display: none; /* Hide text on mobile */
+                    display: none;
                 }
                 .nav-btn .btn-icon {
-                    display: flex; /* SHOW ICON ON MOBILE */
+                    display: flex;
                     border-left: none;
                     width: 100%;
                     min-width: unset;
                 }
 
-                /* Queue cards */
                 .card {
                     flex-wrap: wrap;
                     gap: 0.5rem;
@@ -326,22 +323,20 @@
                     justify-content: flex-end;
                 }
 
-                /* Accept/Reject buttons as perfect squares */
                 .actions button {
                     width: 42px !important;
                     height: 42px !important;
                 }
                 .actions button .btn-label {
-                    display: none; /* Hide text on mobile */
+                    display: none;
                 }
                 .actions button .btn-icon {
-                    display: flex; /* SHOW ICON ON MOBILE */
+                    display: flex;
                     border-left: none;
                     width: 100%;
                     min-width: unset;
                 }
 
-                /* Progress cards */
                 .progress-wrapper {
                     flex-wrap: wrap;
                     gap: 0.4rem;
@@ -363,7 +358,6 @@
                     font-size: 0.8rem;
                 }
 
-                /* History table */
                 .history-header .time,
                 .history-item .time {
                     width: 60px;
@@ -534,28 +528,22 @@
                 const card = document.getElementById(`card-${id}`);
                 const name = card.querySelector(".file-name").textContent;
 
+                // Visually confirm handoff, then let the browser's download manager take over.
                 card.innerHTML = `
                     <div class="file-name" title="${name}">${name}</div>
-                    <div class="progress-wrapper">
-                        <div class="stats"><span id="pct-${id}">0%</span> <span id="spd-${id}"></span></div>
-                        <div class="progress-track"><div class="progress-fill" id="bar-${id}"></div></div>
-                        <div class="status-text" id="status-${id}">DOWNLOADING...</div>
-                    </div>
+                    <div class="status-text" style="flex-grow: 1; text-align: right; color: #888;">HANDED TO BROWSER</div>
                 `;
 
-                fetch(`/download?id=${id}`)
-                    .then((response) => response.blob())
-                    .then((blob) => {
-                        const url = window.URL.createObjectURL(blob);
-                        const a = document.createElement("a");
-                        a.href = url;
-                        a.download = name;
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                        window.URL.revokeObjectURL(url);
-                    })
-                    .catch((err) => console.error("Download failed:", err));
+                // Standard native browser navigation to trigger the download.
+                const a = document.createElement("a");
+                a.href = `/download?id=${id}`;
+                a.target = "_blank";
+                a.download = name;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+
+                setTimeout(() => removeCard(id), 2500);
             }
 
             function reject(id) {
@@ -571,24 +559,7 @@
                 }
             }
 
-            es.addEventListener("progress", (e) => {
-                const p = JSON.parse(e.data);
-                const bar = document.getElementById(`bar-${p.id}`);
-                if (!bar) return;
-
-                const pct = Math.round((p.sent / p.total) * 100);
-                bar.style.width = pct + "%";
-                document.getElementById(`pct-${p.id}`).textContent = pct + "%";
-                document.getElementById(`spd-${p.id}`).textContent =
-                    formatSize(p.speed) + "/s";
-
-                if (pct >= 100) {
-                    document.getElementById(`status-${p.id}`).textContent =
-                        "SAVED TO DOWNLOADS";
-                    setTimeout(() => removeCard(p.id), 2500);
-                }
-            });
-
+            // Kept solely for Upload functionality
             function uploadFile(file) {
                 if (!file) return;
 
