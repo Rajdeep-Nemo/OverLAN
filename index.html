@@ -187,7 +187,7 @@
                 display: block;
             }
 
-            /* Inline Progress (Kept strictly for Uploads) */
+            /* Inline Progress */
             .progress-wrapper {
                 display: flex;
                 align-items: center;
@@ -276,7 +276,6 @@
                 body {
                     padding: 1rem;
                 }
-
                 .topbar {
                     gap: 0.75rem;
                     margin-bottom: 1.25rem;
@@ -376,7 +375,6 @@
                 #history-table {
                     font-size: 0.85rem;
                 }
-
                 .empty-state-text {
                     font-size: 1rem;
                     letter-spacing: 1px;
@@ -418,7 +416,7 @@
                     type="file"
                     id="fileInput"
                     style="display: none"
-                    onchange="uploadFile(this.files[0])"
+                    onchange="queueUpload(this.files[0])"
                 />
                 <button
                     class="nav-btn"
@@ -472,6 +470,9 @@
         <script>
             const es = new EventSource("/events");
 
+            // Map to store files waiting to be uploaded
+            const pendingUploads = new Map();
+
             let isHistoryView = false;
             const historyIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>`;
             const queueIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 5H3"/><path d="M16 12H3"/><path d="M9 19H3"/><path d="m16 16-3 3 3 3"/><path d="M21 5v12a2 2 0 0 1-2 2h-6"/></svg>`;
@@ -505,13 +506,14 @@
                 }
             }
 
+            // --- INCOMING DOWNLOAD LOGIC ---
             es.addEventListener("file", (e) => {
                 const f = JSON.parse(e.data);
                 if (document.getElementById(`card-${f.id}`)) return;
 
                 const html = `
                     <div class="card" id="card-${f.id}">
-                        <div class="file-name" title="${f.name}">${f.name}</div>
+                        <div class="file-name" title="${f.name}">⬇ ${f.name}</div>
                         <div class="file-size">${formatSize(f.size)}</div>
                         <div class="actions">
                             <button onclick="reject('${f.id}')"><span class="btn-label">REJECT</span><span class="btn-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></span></button>
@@ -526,15 +528,15 @@
 
             function accept(id) {
                 const card = document.getElementById(`card-${id}`);
-                const name = card.querySelector(".file-name").textContent;
+                const name = card
+                    .querySelector(".file-name")
+                    .textContent.replace("⬇ ", "");
 
-                // Visually confirm handoff, then let the browser's download manager take over.
                 card.innerHTML = `
-                    <div class="file-name" title="${name}">${name}</div>
+                    <div class="file-name" title="${name}">⬇ ${name}</div>
                     <div class="status-text" style="flex-grow: 1; text-align: right; color: #888;">HANDED TO BROWSER</div>
                 `;
 
-                // Standard native browser navigation to trigger the download.
                 const a = document.createElement("a");
                 a.href = `/download?id=${id}`;
                 a.target = "_blank";
@@ -551,27 +553,20 @@
                 removeCard(id);
             }
 
-            function removeCard(id) {
-                const card = document.getElementById(`card-${id}`);
-                if (card) {
-                    card.remove();
-                    checkEmptyQueue();
-                }
-            }
-
-            // Kept solely for Upload functionality
-            function uploadFile(file) {
+            // --- OUTGOING UPLOAD LOGIC ---
+            function queueUpload(file) {
                 if (!file) return;
 
                 const tempId = "up-" + Math.random().toString(36).substring(2);
+                pendingUploads.set(tempId, file);
 
                 const html = `
                     <div class="card" id="card-${tempId}">
-                        <div class="file-name" title="${file.name}">${file.name}</div>
-                        <div class="progress-wrapper">
-                            <div class="stats"><span id="pct-${tempId}">0%</span></div>
-                            <div class="progress-track"><div class="progress-fill" id="bar-${tempId}"></div></div>
-                            <div class="status-text" id="status-${tempId}">UPLOADING...</div>
+                        <div class="file-name" title="${file.name}">⬆ ${file.name}</div>
+                        <div class="file-size">${formatSize(file.size)}</div>
+                        <div class="actions">
+                            <button onclick="cancelUpload('${tempId}')"><span class="btn-label">CANCEL</span><span class="btn-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></span></button>
+                            <button onclick="confirmUpload('${tempId}')"><span class="btn-label">SEND</span><span class="btn-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg></span></button>
                         </div>
                     </div>`;
                 document
@@ -579,30 +574,53 @@
                     .insertAdjacentHTML("afterbegin", html);
                 checkEmptyQueue();
 
+                // Clear input so the same file can be selected again if canceled
+                document.getElementById("fileInput").value = "";
+            }
+
+            function cancelUpload(id) {
+                pendingUploads.delete(id);
+                removeCard(id);
+            }
+
+            function confirmUpload(id) {
+                const file = pendingUploads.get(id);
+                if (!file) return;
+
+                pendingUploads.delete(id); // Remove from memory
+
+                const card = document.getElementById(`card-${id}`);
+                card.innerHTML = `
+                    <div class="file-name" title="${file.name}">⬆ ${file.name}</div>
+                    <div class="progress-wrapper">
+                        <div class="stats"><span id="pct-${id}">0%</span></div>
+                        <div class="progress-track"><div class="progress-fill" id="bar-${id}"></div></div>
+                        <div class="status-text" id="status-${id}">UPLOADING...</div>
+                    </div>
+                `;
+
                 const xhr = new XMLHttpRequest();
                 xhr.open("POST", "/upload", true);
 
                 xhr.upload.onprogress = (e) => {
                     if (e.lengthComputable) {
                         const pct = Math.round((e.loaded / e.total) * 100);
-                        document.getElementById(`bar-${tempId}`).style.width =
+                        document.getElementById(`bar-${id}`).style.width =
                             pct + "%";
-                        document.getElementById(`pct-${tempId}`).textContent =
+                        document.getElementById(`pct-${id}`).textContent =
                             pct + "%";
                     }
                 };
 
                 xhr.onload = () => {
                     if (xhr.status === 200) {
-                        document.getElementById(
-                            `status-${tempId}`,
-                        ).textContent = "SENT SUCCESSFULLY";
-                        setTimeout(() => removeCard(tempId), 2000);
+                        document.getElementById(`status-${id}`).textContent =
+                            "SENT SUCCESSFULLY";
+                        setTimeout(() => removeCard(id), 2000);
                     } else {
-                        document.getElementById(
-                            `status-${tempId}`,
-                        ).textContent = "UPLOAD FAILED";
-                        setTimeout(() => removeCard(tempId), 4000);
+                        document.getElementById(`status-${id}`).textContent =
+                            "UPLOAD FAILED";
+                        setTimeout(() => removeCard(id), 4000);
                     }
                 };
 
@@ -611,6 +629,15 @@
                 xhr.send(formData);
             }
 
+            function removeCard(id) {
+                const card = document.getElementById(`card-${id}`);
+                if (card) {
+                    card.remove();
+                    checkEmptyQueue();
+                }
+            }
+
+            // --- HISTORY LOGIC ---
             function checkEmptyHistory() {
                 const list = document.getElementById("history-list");
                 const emptyState = document.getElementById(
