@@ -18,6 +18,7 @@ import (
 	"time"
 )
 
+// Embed the html into a single binary
 //go:embed index.html
 var receiverHTML []byte
 
@@ -211,9 +212,8 @@ func handleDownload(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, path)
 }
 
-// HIGH-PERFORMANCE STREAMING UPLOAD
+
 func handleUpload(w http.ResponseWriter, r *http.Request) {
-	// 1. Grab the raw network stream directly (NO Temp files, NO memory limits)
 	reader, err := r.MultipartReader()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -231,7 +231,6 @@ func handleUpload(w http.ResponseWriter, r *http.Request) {
 		downloadFolder = homeDir
 	}
 
-	// 2. Iterate through the incoming form parts until we find the actual file
 	for {
 		part, err := reader.NextPart()
 		if err == io.EOF {
@@ -242,7 +241,6 @@ func handleUpload(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// 3. If we found the file part, start streaming it to disk
 		if part.FileName() != "" {
 			savePath := filepath.Join(downloadFolder, part.FileName())
 			dst, err := os.Create(savePath)
@@ -251,22 +249,19 @@ func handleUpload(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			// io.Copy writes from the network stream directly to the file stream.
 			if _, err := io.Copy(dst, part); err != nil {
-				// If the user clicks Cancel, io.Copy fails. We must close and delete the broken file.
 				dst.Close()
 				os.Remove(savePath)
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
 
-			// Upload succeeded!
 			dst.Close()
 
 			addHistory(part.FileName(), "UPLOADED")
 			fmt.Printf("\nReceived file from browser: %s\n", savePath)
 			w.WriteHeader(http.StatusOK)
-			return // We process one file per request, then exit
+			return
 		}
 	}
 
