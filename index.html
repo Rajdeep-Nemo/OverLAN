@@ -42,6 +42,7 @@
                 display: flex;
                 gap: 1rem;
             }
+
             .nav-btn {
                 padding: 0;
                 background: #fff;
@@ -54,24 +55,25 @@
                 white-space: nowrap;
                 display: flex;
                 align-items: stretch;
+                height: 40px;
             }
             .nav-btn:hover {
                 background: #000;
                 color: #fff;
-                box-shadow: inset 0 0 0 2px #fff;
             }
             .nav-btn .btn-label {
                 display: flex;
                 align-items: center;
-                padding: 0.5rem 0.85rem;
+                justify-content: center;
+                padding: 0 1rem; /* Restored comfortable padding for text */
                 flex-grow: 1;
             }
             .nav-btn .btn-icon {
-                display: flex;
+                display: none; /* HIDDEN ON DESKTOP */
                 align-items: center;
                 justify-content: center;
-                width: 36px;
-                min-width: 36px;
+                width: 40px;
+                min-width: 40px;
                 border-left: 2px solid #000;
             }
             .nav-btn:hover .btn-icon {
@@ -81,7 +83,10 @@
                 display: block;
             }
 
-            /* History/Queue button shares the standard nav-btn width */
+            /* Fixed width to prevent jitter - reduced since icon is gone */
+            #btn-history {
+                width: 120px;
+            }
 
             /* View Containers */
             #main-view {
@@ -155,24 +160,25 @@
                 white-space: nowrap;
                 display: flex;
                 align-items: stretch;
+                height: 40px;
             }
             .actions button:hover {
                 background: #000;
                 color: #fff;
-                box-shadow: inset 0 0 0 2px #fff;
             }
             .actions button .btn-label {
                 display: flex;
                 align-items: center;
-                padding: 0.5rem 0.85rem;
+                justify-content: center;
+                padding: 0 1rem;
                 flex-grow: 1;
             }
             .actions button .btn-icon {
-                display: flex;
+                display: none; /* HIDDEN ON DESKTOP */
                 align-items: center;
                 justify-content: center;
-                min-width: 36px;
-                width: 36px;
+                min-width: 40px;
+                width: 40px;
                 border-left: 2px solid #000;
             }
             .actions button:hover .btn-icon {
@@ -234,24 +240,20 @@
                 gap: 1.5rem;
                 width: 100%;
             }
-
             .history-header {
                 font-weight: 700;
                 text-transform: uppercase;
                 border: 3px solid #000;
             }
-
             .history-header > div {
                 font-size: 1rem;
                 font-weight: 700;
             }
-
             .history-item {
                 border-bottom: 2px solid #000;
                 border-left: 3px solid transparent;
                 border-right: 3px solid transparent;
             }
-
             .history-header .time,
             .history-item .time {
                 width: 100px;
@@ -276,7 +278,6 @@
                     padding: 1rem;
                 }
 
-                /* Topbar: shrink gap, hide button text labels */
                 .topbar {
                     gap: 0.75rem;
                     margin-bottom: 1.25rem;
@@ -288,24 +289,31 @@
                 .nav-actions {
                     gap: 0.5rem;
                 }
-                /* Icon-only nav buttons on mobile */
+
+                /* Explicitly force buttons to be perfect 42x42 squares */
+                .nav-btn,
+                #btn-history {
+                    width: 42px !important;
+                    height: 42px !important;
+                }
                 .nav-btn .btn-label {
-                    display: none;
+                    display: none; /* Hide text on mobile */
                 }
                 .nav-btn .btn-icon {
+                    display: flex; /* SHOW ICON ON MOBILE */
                     border-left: none;
-                    width: 42px;
-                    min-width: 42px;
+                    width: 100%;
+                    min-width: unset;
                 }
 
-                /* Queue cards: stack filename+size on top, actions below */
+                /* Queue cards */
                 .card {
                     flex-wrap: wrap;
                     gap: 0.5rem;
                     padding: 0.65rem 0.75rem;
                 }
                 .file-name {
-                    flex-basis: calc(100% - 90px); /* leave room for size */
+                    flex-basis: calc(100% - 90px);
                     font-size: 0.9rem;
                 }
                 .file-size {
@@ -317,17 +325,23 @@
                     width: 100%;
                     justify-content: flex-end;
                 }
-                /* Icon-only action buttons on mobile */
+
+                /* Accept/Reject buttons as perfect squares */
+                .actions button {
+                    width: 42px !important;
+                    height: 42px !important;
+                }
                 .actions button .btn-label {
-                    display: none;
+                    display: none; /* Hide text on mobile */
                 }
                 .actions button .btn-icon {
+                    display: flex; /* SHOW ICON ON MOBILE */
                     border-left: none;
-                    width: 42px;
-                    min-width: 42px;
+                    width: 100%;
+                    min-width: unset;
                 }
 
-                /* Progress cards: stack vertically */
+                /* Progress cards */
                 .progress-wrapper {
                     flex-wrap: wrap;
                     gap: 0.4rem;
@@ -349,7 +363,7 @@
                     font-size: 0.8rem;
                 }
 
-                /* History table: collapse time column, shrink status */
+                /* History table */
                 .history-header .time,
                 .history-item .time {
                     width: 60px;
@@ -464,9 +478,7 @@
         <script>
             const es = new EventSource("/events");
 
-            // --- VIEW TOGGLING & SVG SWAPPING ---
             let isHistoryView = false;
-
             const historyIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>`;
             const queueIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 5H3"/><path d="M16 12H3"/><path d="M9 19H3"/><path d="m16 16-3 3 3 3"/><path d="M21 5v12a2 2 0 0 1-2 2h-6"/></svg>`;
 
@@ -487,7 +499,6 @@
                 }
             }
 
-            // --- QUEUE LOGIC ---
             function checkEmptyQueue() {
                 const queueHasItems =
                     document.getElementById("queue").children.length > 0;
@@ -509,8 +520,8 @@
                         <div class="file-name" title="${f.name}">${f.name}</div>
                         <div class="file-size">${formatSize(f.size)}</div>
                         <div class="actions">
-                            <button onclick="reject('${f.id}')"><span class="btn-label">REJECT</span><span class="btn-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></span></button>
-                            <button onclick="accept('${f.id}')"><span class="btn-label">ACCEPT</span><span class="btn-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span></button>
+                            <button onclick="reject('${f.id}')"><span class="btn-label">REJECT</span><span class="btn-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></span></button>
+                            <button onclick="accept('${f.id}')"><span class="btn-label">ACCEPT</span><span class="btn-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span></button>
                         </div>
                     </div>`;
                 document
@@ -532,12 +543,19 @@
                     </div>
                 `;
 
-                const a = document.createElement("a");
-                a.href = `/download?id=${id}`;
-                a.download = "";
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
+                fetch(`/download?id=${id}`)
+                    .then((response) => response.blob())
+                    .then((blob) => {
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = name;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        window.URL.revokeObjectURL(url);
+                    })
+                    .catch((err) => console.error("Download failed:", err));
             }
 
             function reject(id) {
@@ -622,7 +640,6 @@
                 xhr.send(formData);
             }
 
-            // --- HISTORY LOGIC ---
             function checkEmptyHistory() {
                 const list = document.getElementById("history-list");
                 const emptyState = document.getElementById(
@@ -663,7 +680,6 @@
                 checkEmptyHistory();
             });
 
-            // --- UTILITIES ---
             function formatSize(bytes) {
                 if (bytes < 1024) return bytes + " B";
                 if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
