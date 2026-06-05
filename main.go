@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -166,6 +167,56 @@ func handleDownload(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Handles Uploads from the browser back to the Go server
+func handleUpload(w http.ResponseWriter, r *http.Request) {
+	// Limit memory usage to 32MB, the rest is streamed to disk
+	if err := r.ParseMultipartForm(32 << 20); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Retrieve the file from the form data
+	file, header, err := r.FormFile("file")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	// Find the user's home directory across any OS (Windows/Mac/Linux)
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		http.Error(w, "Could not find home directory", http.StatusInternalServerError)
+		return
+	}
+
+	downloadFolder := filepath.Join(homeDir, "Downloads")
+
+	// Verify if the Downloads folder actually exists
+	if _, err := os.Stat(downloadFolder); os.IsNotExist(err) {
+		downloadFolder = homeDir
+	}
+
+	// Route the file
+	savePath := filepath.Join(downloadFolder, header.Filename)
+	dst, err := os.Create(savePath)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer dst.Close()
+
+	// Copy the data to the local disk
+	if _, err := io.Copy(dst, file); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Printf("\nReceived file from browser: %s\n", savePath)
+	w.WriteHeader(http.StatusOK)
+}
+
 // Handlers for accept/reject buttons
 func handleAccept(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) }
 func handleReject(w http.ResponseWriter)                  { w.WriteHeader(http.StatusOK) }
@@ -190,6 +241,7 @@ func main() {
 	mux.HandleFunc("/events", handleSSE)        // SSE stream
 	mux.HandleFunc("/accept", handleAccept)     // Accept handler
 	mux.HandleFunc("/download", handleDownload) // Serves file
+	mux.HandleFunc("/upload", handleUpload)     // Handles upload
 
 	fileChan := make(chan string)
 
