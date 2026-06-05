@@ -269,6 +269,111 @@
                 text-align: right;
                 text-transform: uppercase;
             }
+
+            /* ── Mobile responsive ── */
+            @media (max-width: 600px) {
+                body {
+                    padding: 1rem;
+                }
+
+                /* Topbar: shrink gap, hide button text labels */
+                .topbar {
+                    gap: 0.75rem;
+                    margin-bottom: 1.25rem;
+                }
+                .topbar h1 {
+                    font-size: 1.1rem;
+                    letter-spacing: 1px;
+                }
+                .nav-actions {
+                    gap: 0.5rem;
+                }
+                /* Icon-only nav buttons on mobile */
+                .nav-btn .btn-label {
+                    display: none;
+                }
+                .nav-btn .btn-icon {
+                    border-left: none;
+                    width: 42px;
+                    min-width: 42px;
+                }
+
+                /* Queue cards: stack filename+size on top, actions below */
+                .card {
+                    flex-wrap: wrap;
+                    gap: 0.5rem;
+                    padding: 0.65rem 0.75rem;
+                }
+                .file-name {
+                    flex-basis: calc(100% - 90px); /* leave room for size */
+                    font-size: 0.9rem;
+                }
+                .file-size {
+                    font-size: 0.85rem;
+                    width: auto;
+                    min-width: 60px;
+                }
+                .actions {
+                    width: 100%;
+                    justify-content: flex-end;
+                }
+                /* Icon-only action buttons on mobile */
+                .actions button .btn-label {
+                    display: none;
+                }
+                .actions button .btn-icon {
+                    border-left: none;
+                    width: 42px;
+                    min-width: 42px;
+                }
+
+                /* Progress cards: stack vertically */
+                .progress-wrapper {
+                    flex-wrap: wrap;
+                    gap: 0.4rem;
+                    width: 100%;
+                }
+                .stats {
+                    min-width: unset;
+                    gap: 0.75rem;
+                }
+                .progress-track {
+                    width: 100%;
+                    min-width: unset;
+                    flex-basis: 100%;
+                    order: 3;
+                }
+                .status-text {
+                    width: auto;
+                    text-align: left;
+                    font-size: 0.8rem;
+                }
+
+                /* History table: collapse time column, shrink status */
+                .history-header .time,
+                .history-item .time {
+                    width: 60px;
+                    font-size: 0.8rem;
+                }
+                .history-header .status,
+                .history-item .status {
+                    width: 70px;
+                    font-size: 0.8rem;
+                }
+                .history-header,
+                .history-item {
+                    gap: 0.75rem;
+                    padding: 0.6rem 0.75rem;
+                }
+                #history-table {
+                    font-size: 0.85rem;
+                }
+
+                .empty-state-text {
+                    font-size: 1rem;
+                    letter-spacing: 1px;
+                }
+            }
         </style>
     </head>
     <body>
