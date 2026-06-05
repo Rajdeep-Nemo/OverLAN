@@ -10,7 +10,9 @@
                 padding: 0;
             }
             body {
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                font-family:
+                    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                    sans-serif;
                 background: #fff;
                 color: #000;
                 padding: 2rem;
@@ -40,7 +42,7 @@
                 display: flex;
                 gap: 1rem;
             }
-            
+
             .nav-btn {
                 padding: 0;
                 background: #fff;
@@ -53,7 +55,7 @@
                 white-space: nowrap;
                 display: flex;
                 align-items: stretch;
-                height: 40px; 
+                height: 40px;
             }
             .nav-btn:hover {
                 background: #000;
@@ -67,7 +69,7 @@
                 flex-grow: 1;
             }
             .nav-btn .btn-icon {
-                display: none; 
+                display: none;
                 align-items: center;
                 justify-content: center;
                 width: 40px;
@@ -171,7 +173,7 @@
                 flex-grow: 1;
             }
             .actions button .btn-icon {
-                display: none; 
+                display: none;
                 align-items: center;
                 justify-content: center;
                 min-width: 40px;
@@ -271,18 +273,31 @@
 
             /* ── Mobile responsive ── */
             @media (max-width: 600px) {
-                body { padding: 1rem; }
-                .topbar { gap: 0.75rem; margin-bottom: 1.25rem; }
-                .topbar h1 { font-size: 1.1rem; letter-spacing: 1px; }
-                .nav-actions { gap: 0.5rem; }
-                
-                .nav-btn, #btn-history {
+                body {
+                    padding: 1rem;
+                }
+                .topbar {
+                    gap: 0.75rem;
+                    margin-bottom: 1.25rem;
+                }
+                .topbar h1 {
+                    font-size: 1.1rem;
+                    letter-spacing: 1px;
+                }
+                .nav-actions {
+                    gap: 0.5rem;
+                }
+
+                .nav-btn,
+                #btn-history {
                     width: 42px !important;
                     height: 42px !important;
                 }
-                .nav-btn .btn-label { display: none; }
+                .nav-btn .btn-label {
+                    display: none;
+                }
                 .nav-btn .btn-icon {
-                    display: flex; 
+                    display: flex;
                     border-left: none;
                     width: 100%;
                     min-width: unset;
@@ -294,7 +309,7 @@
                     padding: 0.65rem 0.75rem;
                 }
                 .file-name {
-                    flex-basis: calc(100% - 90px); 
+                    flex-basis: calc(100% - 90px);
                     font-size: 0.9rem;
                 }
                 .file-size {
@@ -306,14 +321,16 @@
                     width: 100%;
                     justify-content: flex-end;
                 }
-                
+
                 .actions button {
                     width: 42px !important;
                     height: 42px !important;
                 }
-                .actions button .btn-label { display: none; }
+                .actions button .btn-label {
+                    display: none;
+                }
                 .actions button .btn-icon {
-                    display: flex; 
+                    display: flex;
                     border-left: none;
                     width: 100%;
                     min-width: unset;
@@ -340,11 +357,28 @@
                     font-size: 0.8rem;
                 }
 
-                .history-header .time, .history-item .time { width: 60px; font-size: 0.8rem; }
-                .history-header .status, .history-item .status { width: 70px; font-size: 0.8rem; }
-                .history-header, .history-item { gap: 0.75rem; padding: 0.6rem 0.75rem; }
-                #history-table { font-size: 0.85rem; }
-                .empty-state-text { font-size: 1rem; letter-spacing: 1px; }
+                .history-header .time,
+                .history-item .time {
+                    width: 60px;
+                    font-size: 0.8rem;
+                }
+                .history-header .status,
+                .history-item .status {
+                    width: 70px;
+                    font-size: 0.8rem;
+                }
+                .history-header,
+                .history-item {
+                    gap: 0.75rem;
+                    padding: 0.6rem 0.75rem;
+                }
+                #history-table {
+                    font-size: 0.85rem;
+                }
+                .empty-state-text {
+                    font-size: 1rem;
+                    letter-spacing: 1px;
+                }
             }
         </style>
     </head>
@@ -352,29 +386,77 @@
         <div class="topbar">
             <h1>OVERLAN</h1>
             <div class="nav-actions">
-                <button class="nav-btn" id="btn-history" onclick="toggleHistory()">
+                <button
+                    class="nav-btn"
+                    id="btn-history"
+                    onclick="toggleHistory()"
+                >
                     <span class="btn-label">HISTORY</span>
                     <span class="btn-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <path
+                                d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"
+                            />
+                            <path d="M3 3v5h5" />
+                            <path d="M12 7v5l4 2" />
+                        </svg>
                     </span>
                 </button>
-                <input type="file" id="fileInput" style="display: none" onchange="queueUpload(this.files[0])"/>
-                <button class="nav-btn" onclick="document.getElementById('fileInput').click()">
+                <input
+                    type="file"
+                    id="fileInput"
+                    style="display: none"
+                    onchange="queueUpload(this.files[0])"
+                />
+                <button
+                    class="nav-btn"
+                    onclick="document.getElementById('fileInput').click()"
+                >
                     <span class="btn-label">SHARE FILE</span>
                     <span class="btn-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v13"/><path d="m16 6-4-4-4 4"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/></svg>
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <path d="M12 2v13" />
+                            <path d="m16 6-4-4-4 4" />
+                            <path
+                                d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"
+                            />
+                        </svg>
                     </span>
                 </button>
             </div>
         </div>
 
         <div id="main-view">
-            <div id="empty-queue-state" class="empty-state-text">WAITING FOR FILES...</div>
+            <div id="empty-queue-state" class="empty-state-text">
+                WAITING FOR FILES...
+            </div>
             <div id="queue"></div>
         </div>
 
         <div id="history-view">
-            <div id="empty-history-state" class="empty-state-text">HISTORY IS EMPTY</div>
+            <div id="empty-history-state" class="empty-state-text">
+                HISTORY IS EMPTY
+            </div>
             <div id="history-table">
                 <div class="history-header">
                     <div class="time">TIME</div>
@@ -387,8 +469,11 @@
 
         <script>
             const es = new EventSource("/events");
-            
+
+            // Track files waiting to be sent
             const pendingUploads = new Map();
+            // Track actively uploading requests so we can abort them
+            const activeUploads = new Map();
 
             let isHistoryView = false;
             const historyIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>`;
@@ -412,11 +497,14 @@
             }
 
             function checkEmptyQueue() {
-                const queueHasItems = document.getElementById("queue").children.length > 0;
+                const queueHasItems =
+                    document.getElementById("queue").children.length > 0;
                 if (queueHasItems) {
-                    document.getElementById("empty-queue-state").style.display = "none";
+                    document.getElementById("empty-queue-state").style.display =
+                        "none";
                 } else {
-                    document.getElementById("empty-queue-state").style.display = "flex";
+                    document.getElementById("empty-queue-state").style.display =
+                        "flex";
                 }
             }
 
@@ -434,13 +522,17 @@
                             <button onclick="accept('${f.id}')"><span class="btn-label">ACCEPT</span><span class="btn-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span></button>
                         </div>
                     </div>`;
-                document.getElementById("queue").insertAdjacentHTML("beforeend", html);
+                document
+                    .getElementById("queue")
+                    .insertAdjacentHTML("beforeend", html);
                 checkEmptyQueue();
             });
 
             function accept(id) {
                 const card = document.getElementById(`card-${id}`);
-                const name = card.querySelector(".file-name").textContent.trim();
+                const name = card
+                    .querySelector(".file-name")
+                    .textContent.trim();
 
                 card.innerHTML = `
                     <div class="file-name" title="${name}">${name}</div>
@@ -449,7 +541,7 @@
 
                 const a = document.createElement("a");
                 a.href = `/download?id=${id}`;
-                a.target = "_blank"; 
+                a.target = "_blank";
                 a.download = name;
                 document.body.appendChild(a);
                 a.click();
@@ -475,26 +567,37 @@
                         <div class="file-name" title="${file.name}">${file.name}</div>
                         <div class="file-size">${formatSize(file.size)}</div>
                         <div class="actions">
-                            <button onclick="cancelUpload('${tempId}')"><span class="btn-label">CANCEL</span><span class="btn-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></span></button>
+                            <button onclick="cancelPendingUpload('${tempId}')"><span class="btn-label">CANCEL</span><span class="btn-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></span></button>
                             <button onclick="confirmUpload('${tempId}')"><span class="btn-label">SEND</span><span class="btn-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg></span></button>
                         </div>
                     </div>`;
-                document.getElementById("queue").insertAdjacentHTML("afterbegin", html);
+                document
+                    .getElementById("queue")
+                    .insertAdjacentHTML("afterbegin", html);
                 checkEmptyQueue();
 
-                document.getElementById('fileInput').value = ""; 
+                document.getElementById("fileInput").value = "";
             }
 
-            function cancelUpload(id) {
+            function cancelPendingUpload(id) {
                 pendingUploads.delete(id);
+                removeCard(id);
+            }
+
+            function abortActiveUpload(id) {
+                const xhr = activeUploads.get(id);
+                if (xhr) {
+                    xhr.abort();
+                    activeUploads.delete(id);
+                }
                 removeCard(id);
             }
 
             function confirmUpload(id) {
                 const file = pendingUploads.get(id);
                 if (!file) return;
-                
-                pendingUploads.delete(id); 
+
+                pendingUploads.delete(id);
 
                 const card = document.getElementById(`card-${id}`);
                 card.innerHTML = `
@@ -504,28 +607,43 @@
                         <div class="progress-track"><div class="progress-fill" id="bar-${id}"></div></div>
                         <div class="status-text" id="status-${id}">UPLOADING...</div>
                     </div>
+                    <div class="actions" id="actions-${id}">
+                        <button onclick="abortActiveUpload('${id}')"><span class="btn-label">CANCEL</span><span class="btn-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></span></button>
+                    </div>
                 `;
 
                 const xhr = new XMLHttpRequest();
+                activeUploads.set(id, xhr);
                 xhr.open("POST", "/upload", true);
 
                 xhr.upload.onprogress = (e) => {
                     if (e.lengthComputable) {
                         const pct = Math.round((e.loaded / e.total) * 100);
-                        document.getElementById(`bar-${id}`).style.width = pct + "%";
-                        document.getElementById(`pct-${id}`).textContent = pct + "%";
+                        document.getElementById(`bar-${id}`).style.width =
+                            pct + "%";
+                        document.getElementById(`pct-${id}`).textContent =
+                            pct + "%";
                     }
                 };
 
                 xhr.onload = () => {
+                    activeUploads.delete(id);
+                    const actionsDiv = document.getElementById(`actions-${id}`);
+                    if (actionsDiv) actionsDiv.style.display = "none";
+
                     if (xhr.status === 200) {
-                        document.getElementById(`status-${id}`).textContent = "SENT SUCCESSFULLY";
+                        document.getElementById(`status-${id}`).textContent =
+                            "SENT SUCCESSFULLY";
                         setTimeout(() => removeCard(id), 2000);
                     } else {
-                        document.getElementById(`status-${id}`).textContent = "UPLOAD FAILED";
+                        document.getElementById(`status-${id}`).textContent =
+                            "UPLOAD FAILED";
                         setTimeout(() => removeCard(id), 4000);
                     }
                 };
+
+                xhr.onerror = () => activeUploads.delete(id);
+                xhr.onabort = () => activeUploads.delete(id);
 
                 const formData = new FormData();
                 formData.append("file", file);
@@ -543,7 +661,9 @@
             // --- HISTORY LOGIC ---
             function checkEmptyHistory() {
                 const list = document.getElementById("history-list");
-                const emptyState = document.getElementById("empty-history-state");
+                const emptyState = document.getElementById(
+                    "empty-history-state",
+                );
                 const table = document.getElementById("history-table");
 
                 if (list.children.length === 0) {
