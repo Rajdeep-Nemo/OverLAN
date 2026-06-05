@@ -2,7 +2,9 @@ package main
 
 import (
 	"bufio"
+	"crypto/rand"
 	_ "embed"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -19,71 +21,61 @@ import (
 //go:embed index.html
 var receiverHTML []byte
 
-// Global state protected by a mutex
+type HistoryItem struct {
+	Time   string `json:"time"`
+	Name   string `json:"name"`
+	Status string `json:"status"`
+}
+
 var (
-	mu          sync.Mutex
-	pendingFile string
-	fileReady   bool
+	mu    sync.Mutex
+	queue = make(map[string]string)
+
+	historyMu sync.Mutex
+	history   []HistoryItem
 
 	clientsMu sync.Mutex
 	clients   = make(map[chan string]struct{})
 )
 
-// Set the pending file path
-func setPendingFile(path string) {
-	mu.Lock()
-	pendingFile = path
-	fileReady = true
-	mu.Unlock()
+func generateID() string {
+	bytes := make([]byte, 4)
+	rand.Read(bytes)
+	return hex.EncodeToString(bytes)
 }
 
-// Get the file states
-func getPendingFile() (string, bool) {
+func enqueueFile(path string) string {
 	mu.Lock()
 	defer mu.Unlock()
-	return pendingFile, fileReady
+	id := generateID()
+	queue[id] = path
+	return id
 }
 
-// Handles Home route
+func addHistory(name, status string) {
+	historyMu.Lock()
+	defer historyMu.Unlock()
+
+	item := HistoryItem{
+		Time:   time.Now().Format("15:04:05"),
+		Name:   name,
+		Status: status,
+	}
+
+	history = append([]HistoryItem{item}, history...)
+
+	if len(history) > 50 {
+		history = history[:50]
+	}
+
+	broadcastSSE("history_add", item)
+}
+
 func handleHome(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 	w.Write(receiverHTML)
 }
 
-// Helper to broadcast JSON data to all connected SSE clients
-func broadcastSSE(eventType string, data any) {
-	jsonData, err := json.Marshal(data)
-	if err != nil {
-		return
-	}
-	msg := fmt.Sprintf("event: %s\ndata: %s\n\n", eventType, jsonData)
-
-	clientsMu.Lock()
-	defer clientsMu.Unlock()
-	for clientChan := range clients {
-		// Non-blocking send
-		select {
-		case clientChan <- msg:
-		default:
-		}
-	}
-}
-
-// Notifies clients that a new file is ready
-func notifySSEClients(filePath string) {
-	info, err := os.Stat(filePath)
-	if err != nil {
-		fmt.Printf("Error reading file stat: %v\n", err)
-		return
-	}
-
-	broadcastSSE("file", map[string]interface{}{
-		"name": filepath.Base(filePath),
-		"size": info.Size(),
-	})
-}
-
-// Handles SSE Connections
 func handleSSE(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
@@ -95,15 +87,12 @@ func handleSSE(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create a channel for this specific client
 	clientChan := make(chan string)
 
-	// Register client
 	clientsMu.Lock()
 	clients[clientChan] = struct{}{}
 	clientsMu.Unlock()
 
-	// De-register client when they disconnect
 	defer func() {
 		clientsMu.Lock()
 		delete(clients, clientChan)
@@ -111,27 +100,109 @@ func handleSSE(w http.ResponseWriter, r *http.Request) {
 		close(clientChan)
 	}()
 
-	// If a file is already queued when they connect, notify them immediately
-	if path, ready := getPendingFile(); ready {
-		notifySSEClients(path)
+	mu.Lock()
+	currentQueue := make(map[string]string)
+	for k, v := range queue {
+		currentQueue[k] = v
+	}
+	mu.Unlock()
+
+	for id, path := range currentQueue {
+		info, err := os.Stat(path)
+		if err == nil {
+			data := map[string]any{"id": id, "name": filepath.Base(path), "size": info.Size()}
+			jsonData, _ := json.Marshal(data)
+			fmt.Fprintf(w, "event: file\ndata: %s\n\n", jsonData)
+		}
 	}
 
-	// Listen for messages to send to this client
+	historyMu.Lock()
+	currentHistory := make([]HistoryItem, len(history))
+	copy(currentHistory, history)
+	historyMu.Unlock()
+
+	if len(currentHistory) > 0 {
+		jsonData, _ := json.Marshal(currentHistory)
+		fmt.Fprintf(w, "event: history_sync\ndata: %s\n\n", jsonData)
+	}
+
+	flusher.Flush()
+
 	for {
 		select {
 		case msg := <-clientChan:
 			fmt.Fprint(w, msg)
 			flusher.Flush()
 		case <-r.Context().Done():
-			return // Client disconnected
+			return
 		}
 	}
 }
 
-// Handles Downloads
+func broadcastSSE(eventType string, data any) {
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return
+	}
+	msg := fmt.Sprintf("event: %s\ndata: %s\n\n", eventType, jsonData)
+
+	clientsMu.Lock()
+	defer clientsMu.Unlock()
+	for clientChan := range clients {
+		select {
+		case clientChan <- msg:
+		default:
+		}
+	}
+}
+
+func notifySSEClients(id string, filePath string) {
+	info, err := os.Stat(filePath)
+	if err != nil {
+		fmt.Printf("[Error] Cannot read file (skipping): %s\n", err)
+		return
+	}
+	broadcastSSE("file", map[string]any{
+		"id":   id,
+		"name": filepath.Base(filePath),
+		"size": info.Size(),
+	})
+	fmt.Printf("Queued: %s\n", filepath.Base(filePath))
+}
+
+func handleReject(w http.ResponseWriter, r *http.Request) {
+	id := r.URL.Query().Get("id")
+	mu.Lock()
+	path, exists := queue[id]
+	delete(queue, id)
+	mu.Unlock()
+
+	if exists {
+		addHistory(filepath.Base(path), "REJECTED")
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
 func handleDownload(w http.ResponseWriter, r *http.Request) {
-	path, _ := getPendingFile()
-	file, _ := os.Open(path)
+	id := r.URL.Query().Get("id")
+
+	mu.Lock()
+	path, exists := queue[id]
+	mu.Unlock()
+
+	if !exists {
+		http.Error(w, "File not found or expired", http.StatusNotFound)
+		return
+	}
+
+	addHistory(filepath.Base(path), "DOWNLOADED")
+
+	file, err := os.Open(path)
+	if err != nil {
+		http.Error(w, "Unable to read local file", http.StatusNotFound)
+		return
+	}
 	defer file.Close()
 
 	info, _ := file.Stat()
@@ -141,8 +212,7 @@ func handleDownload(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/octet-stream")
 	w.Header().Set("Content-Length", strconv.FormatInt(total, 10))
 
-	// Copy in chunks and broadcast progress via SSE
-	buf := make([]byte, 32*1024) // 32 KB chunks
+	buf := make([]byte, 32*1024)
 	var sent int64
 	start := time.Now()
 
@@ -152,10 +222,14 @@ func handleDownload(w http.ResponseWriter, r *http.Request) {
 			w.Write(buf[:n])
 			sent += int64(n)
 			elapsed := time.Since(start).Seconds()
-			speed := int64(float64(sent) / elapsed)
 
-			// Notify all SSE clients about progress
-			broadcastSSE("progress", map[string]int64{
+			var speed int64
+			if elapsed > 0 {
+				speed = int64(float64(sent) / elapsed)
+			}
+
+			broadcastSSE("progress", map[string]any{
+				"id":    id,
 				"sent":  sent,
 				"total": total,
 				"speed": speed,
@@ -167,15 +241,12 @@ func handleDownload(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Handles Uploads from the browser back to the Go server
 func handleUpload(w http.ResponseWriter, r *http.Request) {
-	// Limit memory usage to 32MB, the rest is streamed to disk
 	if err := r.ParseMultipartForm(32 << 20); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// Retrieve the file from the form data
 	file, header, err := r.FormFile("file")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -183,7 +254,6 @@ func handleUpload(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	// Find the user's home directory across any OS (Windows/Mac/Linux)
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		http.Error(w, "Could not find home directory", http.StatusInternalServerError)
@@ -191,37 +261,29 @@ func handleUpload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	downloadFolder := filepath.Join(homeDir, "Downloads")
-
-	// Verify if the Downloads folder actually exists
 	if _, err := os.Stat(downloadFolder); os.IsNotExist(err) {
 		downloadFolder = homeDir
 	}
 
-	// Route the file
 	savePath := filepath.Join(downloadFolder, header.Filename)
 	dst, err := os.Create(savePath)
-
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer dst.Close()
 
-	// Copy the data to the local disk
 	if _, err := io.Copy(dst, file); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	addHistory(header.Filename, "UPLOADED")
+
 	fmt.Printf("\nReceived file from browser: %s\n", savePath)
 	w.WriteHeader(http.StatusOK)
 }
 
-// Handlers for accept/reject buttons
-func handleAccept(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) }
-func handleReject(w http.ResponseWriter)                  { w.WriteHeader(http.StatusOK) }
-
-// Returns local ip
 func getLocalIP() string {
 	conn, err := net.Dial("udp", "8.8.8.8:80")
 	if err != nil {
@@ -233,19 +295,21 @@ func getLocalIP() string {
 }
 
 func main() {
-	fmt.Printf("Receiver should open: http://%s:8080\n", getLocalIP())
-	fmt.Println("Type a file path and press ENTER to share it...")
-	// Setting up the routes
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", handleHome)             // Serves the browser UI
-	mux.HandleFunc("/events", handleSSE)        // SSE stream
-	mux.HandleFunc("/accept", handleAccept)     // Accept handler
-	mux.HandleFunc("/download", handleDownload) // Serves file
-	mux.HandleFunc("/upload", handleUpload)     // Handles upload
+	mux.HandleFunc("/", handleHome)
+	mux.HandleFunc("/events", handleSSE)
+	mux.HandleFunc("/reject", handleReject)
+	mux.HandleFunc("/download", handleDownload)
+	mux.HandleFunc("/upload", handleUpload)
+
+	port := ":8080"
+	fmt.Printf("OverLAN Server Running!\n")
+	fmt.Printf("Network Access: http://%s%s\n", getLocalIP(), port)
+	fmt.Println("--------------------------------------------------")
+	fmt.Println("Drag & drop files here and press ENTER to queue them...")
 
 	fileChan := make(chan string)
 
-	// Runs path reading in a background goroutine
 	go func() {
 		scanner := bufio.NewScanner(os.Stdin)
 		for scanner.Scan() {
@@ -255,24 +319,20 @@ func main() {
 				fileChan <- path
 			}
 		}
-
 		if err := scanner.Err(); err != nil {
 			fmt.Fprintf(os.Stderr, "\nError reading input: %v\n", err)
 		}
 		close(fileChan)
 	}()
 
-	// Runs the HTTP server in a background goroutine
 	go func() {
-		if err := http.ListenAndServe(":8080", mux); err != nil {
-			fmt.Printf("HTTP server error: %v\n", err)
+		if err := http.ListenAndServe(port, mux); err != nil {
+			fmt.Printf("Server crashed: %v\n", err)
 		}
 	}()
 
-	// Main goroutine
 	for path := range fileChan {
-		setPendingFile(path)
-		notifySSEClients(path)
-		fmt.Printf("Shared: %s\n", path)
+		id := enqueueFile(path)
+		notifySSEClients(id, path)
 	}
 }
